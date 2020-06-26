@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>Husky Joystick Driving</name>
+  <name>husky_joystick_driving</name>
   <version>0.1.0</version>
   <description>Driving a husky using a Logitech F710 Joystick</description>
 
