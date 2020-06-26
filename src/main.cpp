@@ -7,11 +7,20 @@ const int kButtonX = 0;
 const int kButtonA = 1;
 const int kButtonB = 2;
 const int kButtonY = 3;
+const int kButtonLeftTrigger = 6;
+const int kButtonRightTrigger = 7;
 
 const int kAxisLeftHorizontal = 0;
 const int kAxisLeftVertical = 1;
 const int kAxisRightHorizontal = 2;
 const int kAxisRightVertical = 3;
+
+const double deadzone = 0.2;
+
+const double boostThrottleScalar = 2.0;
+const double boostSteerScalar = 1.5;
+const double slowThrottleScalar = 0.5;
+const double slowSteerScalar = 0.8;
 
 geometry_msgs::Twist currentMessage;
 
@@ -22,34 +31,39 @@ geometry_msgs::Twist currentMessage;
  */
 void joyCallBack(const sensor_msgs::Joy::ConstPtr &msg) {
 
-    //Determine linear velocity based on forward(Y) and backwards(A) buttons
-    double linVel {0.0};
+    //Determine linear velocity based on the left vertical axis
+    double throttle {-msg->axes.at(kAxisLeftVertical) / 2};
 
-    if(msg->buttons.at(kButtonA) == 1) {
-        linVel = 1.0;
-    } else if(msg->buttons.at(kButtonY) == 1) {
-        linVel = -1.0;
+    if(throttle < deadzone && throttle > -deadzone)
+        throttle = 0.0;
+
+    //Determine angular velocity based on the right horizontal axis
+    double steer {msg->axes.at(kAxisRightHorizontal) / 2};
+
+    if(steer < deadzone && steer > -deadzone)
+        steer = 0.0;
+
+    //Apply slow or boost mode based on trigger input
+    if(msg->buttons.at(kButtonLeftTrigger)) {
+        throttle *= slowThrottleScalar;
+        steer *= slowSteerScalar;
     }
-
-    //Determine linear velocity based on right(B) and left(X) buttons
-    double angVel {0.0};
-
-    if(msg->buttons.at(kButtonX) == 1) {
-        angVel = 0.75;
-    } else if(msg->buttons.at(kButtonB) == 1) {
-        angVel = -0.75;
+    //Use else if for safety: slow mode takes precedence
+    else if(msg->buttons.at(kButtonRightTrigger)) {
+        throttle *= boostThrottleScalar;
+        steer *= boostSteerScalar;
     }
 
     //Create a velocity message to publish to the husky
     geometry_msgs::Twist twist;
 
-    twist.linear.x = linVel;
+    twist.linear.x = throttle;
     twist.linear.y = 0;
     twist.linear.z = 0;
 
     twist.angular.x = 0;
     twist.angular.y = 0;
-    twist.angular.z = angVel;
+    twist.angular.z = steer;
 
     currentMessage = twist;
 }
